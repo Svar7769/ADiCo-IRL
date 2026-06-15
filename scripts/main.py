@@ -9,13 +9,13 @@ import time
 import yaml
 import numpy as np
 
-from adico.perception.camera import Camera
-from adico.perception.apriltag_detector import AprilTagDetector
-from adico.perception.observation_builder import ObservationBuilder
-from adico.policy.policy_runner import PolicyRunner
-from adico.control.movement_controller import MultiVectorController
-from adico.utils.perspective import load_corners, compute_homography, warp_frame
-from adico.utils.visualization import DebugVisualizer
+from adico_irl.perception.camera import Camera
+from adico_irl.perception.apriltag_detector import AprilTagDetector
+from adico_irl.perception.observation_builder import ObservationBuilder
+from adico_irl.policy.policy_runner import PolicyRunner
+from adico_irl.control.movement_controller import MultiVectorController
+from adico_irl.utils.perspective import load_corners, compute_homography, warp_frame
+from adico_irl.utils.visualization import DebugVisualizer
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 

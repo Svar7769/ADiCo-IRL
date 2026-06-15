@@ -1,40 +1,49 @@
-action_dim: 2
+#  Arena
+arena_size_m: 1.0
+warped_px:    600
+
+# Camera
+camera_index:    2
+camera_width:    1280
+camera_height:   720
+camera_warmup_s: 2.0
+
+# AprilTags
+corners_path: data/arena_corners.npy
 
 agents:
-- id: 0
-  robot_tag: 1   # agent1.png
-  goal_tag: 3    # goal1.png
-  serial: "00a132eb"
-- id: 1
-  robot_tag: 0   # agent2.png
-  goal_tag: 4    # goal3.png
-  serial: "00506502"
-- id: 2
-  robot_tag: 2   # agent3.png
-  goal_tag: 5    # goal4.png
-  serial: "00a12dbd"
+  - id: 0
+    robot_tag: 1    # agent1.png
+    goal_tag:  3    # goal1.png
+    serial:    "00a132eb"
 
-arena_size_m: 1.0
-goal_reached_threshold: 0.1  # metres — robot stops when within this distance of goal
+  - id: 1
+    robot_tag: 0    # agent2.png
+    goal_tag:  4    # goal3.png
+    serial:    "00506502"
 
-camera_height: 720
-camera_index: 2
-camera_warmup_s: 2.0
-camera_width: 1280
+  - id: 2
+    robot_tag: 2    # agent3.png
+    goal_tag:  5    # goal4.png
+    serial:    "00a12dbd"
 
-checkpoint_path: checkpoints/navigation_3a3g_seed0.pt
-control_hz: 20
-corners_path: arena_corners.npy
+# Policy
+checkpoint_path: data/navigation_3a3g_seed0.pt
+obs_dim:         10
+n_agents:        3
+action_dim:      2
+u_range:         0.5
 
-max_speed_m_s: 1.0
-max_wheel_speed_mm_s: 150.0
-min_turn_rad: 0.087
+# Control loop
+control_hz:             10
+goal_reached_threshold: 0.1
 
-n_agents: 3
-obs_dim: 10
+# Robot hardware 
+max_wheel_speed_mm_s:  150.0
 turn_wheel_speed_mm_s: 100.0
-u_range: 0.5
+min_turn_rad:          0.087
+wheel_base_mm:         45.0
+
+# Observation builder 
 vel_ema_alpha: 0.3
-visualize: true
-warped_px: 600
-wheel_base_mm: 45.0
+max_speed_m_s: 1.0
