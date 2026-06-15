@@ -1,0 +1,40 @@
+action_dim: 2
+
+agents:
+- id: 0
+  robot_tag: 1   # agent1.png
+  goal_tag: 3    # goal1.png
+  serial: "00a132eb"
+- id: 1
+  robot_tag: 0   # agent2.png
+  goal_tag: 4    # goal3.png
+  serial: "00506502"
+- id: 2
+  robot_tag: 2   # agent3.png
+  goal_tag: 5    # goal4.png
+  serial: "00a12dbd"
+
+arena_size_m: 1.0
+goal_reached_threshold: 0.1  # metres — robot stops when within this distance of goal
+
+camera_height: 720
+camera_index: 2
+camera_warmup_s: 2.0
+camera_width: 1280
+
+checkpoint_path: checkpoints/navigation_3a3g_seed0.pt
+control_hz: 20
+corners_path: arena_corners.npy
+
+max_speed_m_s: 1.0
+max_wheel_speed_mm_s: 150.0
+min_turn_rad: 0.087
+
+n_agents: 3
+obs_dim: 10
+turn_wheel_speed_mm_s: 100.0
+u_range: 0.5
+vel_ema_alpha: 0.3
+visualize: true
+warped_px: 600
+wheel_base_mm: 45.0

@@ -1,0 +1,11 @@
+__pycache__/apriltag_detector.cpython-39.pyc
+__pycache__/color_detector.cpython-39.pyc
+__pycache__/camera.cpython-39.pyc
+__pycache__/movement_controller.cpython-39.pyc
+__pycache__/observation_builder.cpython-39.pyc
+__pycache__/policy_runner.cpython-39.pyc
+test_movement_controller.png
+test_trajectory_preview.png
+adico/utils/__pycache__/perspective.cpython-39.pyc
+adico/utils/__pycache__/visualization.cpython-39.pyc
+adico/policy/__pycache__/loader.cpython-39.pyc

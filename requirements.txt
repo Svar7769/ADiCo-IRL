@@ -1,0 +1,8 @@
+opencv-python==4.8.1.78
+numpy==1.24.3
+torch==2.1.0
+pyyaml==6.0.1
+# anki_vector is installed from wirepod-vector-python-sdk git repo (not PyPI)
+# pip install -e /path/to/wirepod-vector-python-sdk
+pandas==2.1.1
+matplotlib==3.8.0
