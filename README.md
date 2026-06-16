@@ -189,3 +189,8 @@ python -m anki_vector.configure -s 00506502 -n Vector-S9G7 -i 10.0.0.148
 python -m anki_vector.configure -s 00a12dbd -n Vector-X9U9 -i 10.0.0.144
 <!-- Vector 2 -->
 python -m anki_vector.configure -s 00a132eb -n Vector-G7P7 -i 10.0.0.30   
+
+<!-- wirepod ip: 10.0.0.28:8080 -->
+
+<!-- run without robot
+python scripts/main.py --no-robot --log-level DEBUG --config adico_irl/config.yaml -->

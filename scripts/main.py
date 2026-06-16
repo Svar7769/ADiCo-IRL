@@ -64,9 +64,21 @@ def main():
     release_thresh = config.get("goal_release_threshold", 0.25)   # goal moved -> re-engage
     obs_timeout    = config.get("obs_timeout_s", 0.5)             # watchdog window
 
+    # --- Arena bounds (stop robots that leave the arena) ---
+    arena_size   = config["arena_size_m"]
+    arena_margin = config.get("arena_margin_m", 0.05)
+    if config.get("arena_origin", "corner") == "center":
+        bound_lo = -arena_size / 2.0 + arena_margin
+        bound_hi =  arena_size / 2.0 - arena_margin
+    else:  # corner origin: 0 .. arena_size
+        bound_lo = arena_margin
+        bound_hi = arena_size - arena_margin
+
     logging.info("Starting control loop")
     logging.info(f"goal_thresh={goal_thresh:.2f} m, "
                  f"release_thresh={release_thresh:.2f} m")
+    logging.info(f"arena bounds: [{bound_lo:.2f}, {bound_hi:.2f}] m "
+                 f"({config.get('arena_origin', 'corner')} origin)")
 
     actions       = None
     last_good_obs = time.time()
@@ -82,7 +94,10 @@ def main():
             detections = detector.detect(warped)
             obs        = obs_builder.update(detections)
 
-            if obs is not None:
+            if obs is not None: 
+                # Temp 
+                logging.info(f"R0 pos: {obs[0][0]:.2f}, {obs[0][1]:.2f}")
+                
                 last_good_obs = time.time()
 
                 # --- Policy ---
@@ -90,8 +105,25 @@ def main():
                 assert actions.shape[0] == len(obs), \
                     f"action/obs count mismatch: {actions.shape[0]} vs {len(obs)}"
 
-                # --- Per-robot goal latch with hysteresis ---
+                # --- Arena bounds safety ---
+                # obs[i][0:2] is the robot's absolute arena position (meters).
+                # Any robot outside the safe bounds is stopped immediately,
+                # before the goal latch, so out-of-bounds always wins.
+                out_of_bounds = [False] * n_agents
                 for i in range(len(actions)):
+                    px, py = obs[i][0], obs[i][1]
+                    if not (bound_lo <= px <= bound_hi and
+                            bound_lo <= py <= bound_hi):
+                        out_of_bounds[i] = True
+                        actions[i] = np.zeros(action_dim)
+                        logging.warning(f"[main] R{i} out of bounds "
+                                        f"({px:.2f}, {py:.2f}) — stopped")
+
+                # --- Per-robot goal latch with hysteresis ---
+                # Skipped for out-of-bounds robots (already zeroed above).
+                for i in range(len(actions)):
+                    if out_of_bounds[i]:
+                        continue
                     goal_dist = np.hypot(obs[i][4], obs[i][5])
 
                     if reached[i]:
@@ -116,7 +148,8 @@ def main():
                 else:
                     action_str = " ".join(
                         f"R{i}=({actions[i][0]:.2f},{actions[i][1]:.2f})"
-                        + ("[stop]" if reached[i] else "")
+                        + ("[OOB]"  if out_of_bounds[i] else
+                           "[stop]" if reached[i]       else "")
                         for i in range(len(actions)))
                     logging.info(f"[main] Actions: {action_str}")
             else:
@@ -125,7 +158,8 @@ def main():
                 logging.warning("[main] Missing detections — holding position")
 
             # --- Watchdog ---
-            # If too long passes without a good observation (camera stall, detection dropout, slow inference), force-stop so the robots
+            # If too long passes without a good observation (camera stall,
+            # detection dropout, slow inference), force-stop so the robots
             # don't keep driving on a latched wheel command with no feedback.
             if time.time() - last_good_obs > obs_timeout and controller:
                 controller.stop_all()

@@ -3,7 +3,7 @@ arena_size_m: 1.0
 warped_px:    600
 
 # Camera
-camera_index:    2
+camera_index:    0
 camera_width:    1280
 camera_height:   720
 camera_warmup_s: 2.0
@@ -32,7 +32,10 @@ checkpoint_path: data/navigation_3a3g_seed0.pt
 obs_dim:         10
 n_agents:        3
 action_dim:      2
-u_range:         0.5
+u_range:         0.4
+
+arena_origin:   corner    # or "center" — see step 3
+arena_margin_m: 0.05
 
 # Control loop
 control_hz:             10
@@ -40,12 +43,12 @@ goal_reached_threshold: 0.1
 
 # Robot hardware 
 max_wheel_speed_mm_s:  150.0
-turn_wheel_speed_mm_s: 100.0
-min_turn_rad:          0.087
-wheel_base_mm:         45.0
+# turn_wheel_speed_mm_s: 100.0
+# min_turn_rad:          0.087
+wheel_base_mm:         48.0
 
 # kinematic controller
-k_alpha: 2.0
+k_alpha: 6.0
 
 # Observation builder 
 vel_ema_alpha: 0.3
