@@ -1,9 +1,11 @@
 # calibrate.py — One-time setup: select arena corners and verify all AprilTags are visible.
 #
 # Usage:
-#   python scripts/calibrate.py config.yaml
+# python scripts/calibrate.py adico_irl/config.yaml
 
-import sys
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import cv2
 import numpy as np
 import yaml

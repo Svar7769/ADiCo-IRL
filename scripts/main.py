@@ -9,6 +9,10 @@ import time
 import yaml
 import numpy as np
 
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+
 from adico_irl.perception.camera import Camera
 from adico_irl.perception.apriltag_detector import AprilTagDetector
 from adico_irl.perception.observation_builder import ObservationBuilder
@@ -16,6 +20,7 @@ from adico_irl.policy.policy_runner import PolicyRunner
 from adico_irl.control.movement_controller import MultiVectorController
 from adico_irl.utils.perspective import load_corners, compute_homography, warp_frame
 from adico_irl.utils.visualization import DebugVisualizer
+
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
