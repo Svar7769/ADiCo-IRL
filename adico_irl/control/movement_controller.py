@@ -1,6 +1,5 @@
-# movement_controller.py — Drives real Anki Vector robots using turn-then-drive approach.
-
-# We need to improve this so the controller is for one agent and then it can we used for multiple robot through a warapper. 
+# movement_controller.py — Drives real Anki Vector robots using kinematic feedback controller.
+# Replaces turn-then-drive with smooth curved motion using differential drive kinematics.
 
 import time
 import math
@@ -13,23 +12,82 @@ import anki_vector
 logger = logging.getLogger(__name__)
 
 
+class VectorController:
+    # Controls a single Anki Vector robot using kinematic feedback control.
+    # Takes (vx, vy) velocity commands and converts to wheel motor speeds.
+
+    def __init__(self, robot: anki_vector.Robot, config: dict):
+        self.robot  = robot
+        self.config = config
+
+        # Wheel base from config — distance between left and right wheels in mm.
+        self.L = config["wheel_base_mm"]
+
+    def execute(self, vx: float, vy: float):
+        v = math.hypot(vx, vy)
+        if v < 0.01:
+            self.robot.motors.set_wheel_motors(0, 0)
+            return
+
+        v_mm = v * self.config["max_wheel_speed_mm_s"] / self.config["u_range"]
+
+        theta_target    = math.atan2(vy, vx)
+        current_heading = self.robot.pose.rotation.angle_z.radians
+        alpha           = self._angle_diff(theta_target, current_heading)
+
+        # Scale forward speed by heading alignment: drive less (or reverse intent)
+        # when the target is behind, so the robot turns toward it instead of
+        # carving a wide arc at full speed.
+        v_mm *= max(0.0, math.cos(alpha))
+
+        omega          = self.config["k_alpha"] * alpha
+        turn_component = omega * (self.L / 2)
+
+        # Positive alpha (target CCW of heading) -> turn left -> right wheel faster.
+        v_l = v_mm - turn_component
+        v_r = v_mm + turn_component
+
+        # Scale both wheels together if either saturates, to preserve the turn ratio.
+        max_spd = self.config["max_wheel_speed_mm_s"]
+        m = max(abs(v_l), abs(v_r), max_spd)
+        scale = max_spd / m
+        v_l *= scale
+        v_r *= scale
+
+        self.robot.motors.set_wheel_motors(int(v_l), int(v_r))
+
+    def stop(self):
+        try:
+            self.robot.motors.set_wheel_motors(0, 0)
+        except Exception as e:
+            logger.error(f"Error stopping robot: {e}")
+
+    def _angle_diff(self, target: float, current: float) -> float:
+        # Returns the shortest signed angle difference in [-pi, pi].
+        diff = (target - current) % (2 * math.pi)
+        if diff > math.pi:
+            diff -= 2 * math.pi
+        return diff
+
+
 class MultiVectorController:
+    # Manages multiple VectorController instances, one per robot.
+    # Sends commands to all robots in parallel using threads.
 
     def __init__(self, config: dict):
-        self.config = config
-        self.robots = []
+        self.config      = config
+        self.controllers = []
 
         for agent in config["agents"]:
             serial = agent["serial"]
             if serial == "REPLACE_ME":
                 raise ValueError(f"Robot serial for agent {agent['id']} not set")
             robot = self._connect_robot(serial)
-            # Set head and lift to neutral position.
             robot.behavior.set_head_angle(anki_vector.util.degrees(10))
             robot.behavior.set_lift_height(0.0)
-            self.robots.append(robot)
+            self.controllers.append(VectorController(robot, config))
 
-        logger.info(f"Connected to {len(self.robots)} robots")
+        logger.info(f"Connected to {len(self.controllers)} robots")
 
     def _connect_robot(self, serial: str) -> anki_vector.Robot:
         # Try connecting up to 3 times with a 5 second delay between attempts.
@@ -45,66 +103,28 @@ class MultiVectorController:
         raise RuntimeError(f"Failed to connect to robot {serial}")
 
     def execute(self, actions: List[List[float]]):
-        # Send commands to all robots in parallel using threads.
-        with concurrent.futures.ThreadPoolExecutor(max_workers=len(self.robots)) as pool:
+        # Send commands to all robots in parallel.
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(self.controllers)) as pool:
             futures = [
-                pool.submit(self._execute_single, robot, *actions[i])
-                for i, robot in enumerate(self.robots)
+                pool.submit(ctrl.execute, *actions[i])
+                for i, ctrl in enumerate(self.controllers)
             ]
             concurrent.futures.wait(futures)
 
-    def _execute_single(self, robot: anki_vector.Robot, vx: float, vy: float):
-        # Non-blocking motor command — loop rate acts as the timer.
-        v = math.hypot(vx, vy)
-
-        # Stop if action magnitude is near zero.
-        if v < 0.01:
-            robot.motors.set_wheel_motors(0, 0)
-            return
-
-        theta_target    = math.atan2(vy, vx)
-        current_heading = robot.pose.rotation.angle_z.radians
-        delta           = self._angle_diff(theta_target, current_heading)
-
-        if abs(delta) > self.config["min_turn_rad"]:
-            # Heading error too large — turn in place, re-evaluate next tick.
-            turn_speed = self.config["turn_wheel_speed_mm_s"]
-            sign       = 1.0 if delta > 0 else -1.0
-            robot.motors.set_wheel_motors(-sign * turn_speed, sign * turn_speed)
-        else:
-            # Heading aligned — drive straight.
-            speed = min(
-                v * self.config["max_wheel_speed_mm_s"] / self.config["u_range"],
-                self.config["max_wheel_speed_mm_s"]
-            )
-            robot.motors.set_wheel_motors(speed, speed)
-
-    def _angle_diff(self, target: float, current: float) -> float:
-        # Returns the shortest signed angle difference in [-pi, pi].
-        diff = (target - current) % (2 * math.pi)
-        if diff > math.pi:
-            diff -= 2 * math.pi
-        return diff
+    def execute_one(self, index: int, vx: float, vy: float):
+        # Send a command to one specific robot by index.
+        self.controllers[index].execute(vx, vy)
 
     def stop_all(self):
-        # Stop all robots. Each robot wrapped independently so one failure doesn't block others.
-        for robot in self.robots:
-            try:
-                robot.motors.set_wheel_motors(0, 0)
-            except Exception as e:
-                logger.error(f"Error stopping robot: {e}")
+        for ctrl in self.controllers:
+            ctrl.stop()
 
     def stop_one(self, index: int):
-        # Stop a single robot by index.
-        try:
-            self.robots[index].motors.set_wheel_motors(0, 0)
-        except Exception as e:
-            logger.error(f"Error stopping robot {index}: {e}")
+        self.controllers[index].stop()
 
     def disconnect(self):
-        # Disconnect from all robots cleanly.
-        for robot in self.robots:
+        for ctrl in self.controllers:
             try:
-                robot.disconnect()
+                ctrl.robot.disconnect()
             except Exception as e:
-                logger.error(f"Error disconnecting robot: {e}")
+                logger.error(f"Error disconnecting: {e}")

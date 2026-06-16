@@ -180,3 +180,12 @@ adico_vector/
 | Camera not opening | Check `camera_index` in `config.yaml` (try 0, 1, 2) |
 | `anki_vector` import error | Make sure you installed from the wirepod git repo, not PyPI |
 | wire-pod not running | `systemctl start wire-pod` |
+
+
+conda activate vector_ctrl
+<!-- vector 3 -->
+python -m anki_vector.configure -s 00506502 -n Vector-S9G7 -i 10.0.0.148
+<!-- Vector 1 -->
+python -m anki_vector.configure -s 00a12dbd -n Vector-X9U9 -i 10.0.0.144
+<!-- Vector 2 -->
+python -m anki_vector.configure -s 00a132eb -n Vector-G7P7 -i 10.0.0.30   

@@ -1,9 +1,4 @@
-__pycache__/apriltag_detector.cpython-39.pyc
-__pycache__/color_detector.cpython-39.pyc
-__pycache__/camera.cpython-39.pyc
-__pycache__/movement_controller.cpython-39.pyc
-__pycache__/observation_builder.cpython-39.pyc
-__pycache__/policy_runner.cpython-39.pyc
+__pycache__
 test_movement_controller.png
 test_trajectory_preview.png
 adico/utils/__pycache__/perspective.cpython-39.pyc
