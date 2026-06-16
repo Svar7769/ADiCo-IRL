@@ -91,9 +91,16 @@ class MultiVectorController:
 
     def _connect_robot(self, serial: str) -> anki_vector.Robot:
         # Try connecting up to 3 times with a 5 second delay between attempts.
+        # Request sustained high-priority control so Vector's own autonomous
+        # behaviors (return-to-charger, react-to-pickup, etc.) can't preempt
+        # our motor commands mid-loop.
         for attempt in range(3):
             try:
-                robot = anki_vector.Robot(serial, behavior_activation_timeout=30)
+                robot = anki_vector.Robot(
+                    serial,
+                    behavior_activation_timeout=30,
+                    behavior_control_level=anki_vector.connection.ControlPriorityLevel.OVERRIDE_BEHAVIORS_PRIORITY,
+                )
                 robot.connect()
                 return robot
             except Exception as e:
